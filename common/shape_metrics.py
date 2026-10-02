@@ -49,13 +49,16 @@ def _canonicalise(C):
     This is what makes the metrics below comparable across embryos imaged in different frames: translation
     goes with the centroid, rotation with the PCA basis, and scale with the RMS radius (a rotation-invariant
     size, unlike a bounding-box extent). PCA leaves each axis' SIGN undetermined, which is why the callers
-    that use the rotated coordinates minimise over the sign combinations with determinant +1.
+    that use the rotated coordinates minimise over the sign combinations with determinant +1. That search only
+    works if every frame has the same handedness, so the basis is made right-handed (det +1) here.
     """
     C = np.asarray(C, float)
     mu = C.mean(0); X = C - mu
     rms = float(np.sqrt((X ** 2).sum(1).mean()))
     if rms < 1e-12: return X, rms
     _, _, Vt = np.linalg.svd(X - X.mean(0), full_matrices=False)
+    if np.linalg.det(Vt) < 0:
+        Vt[-1] *= -1   # keep the frame right-handed, see issue #7
     return (X @ Vt.T) / rms, rms
 
 
