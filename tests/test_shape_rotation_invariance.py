@@ -45,13 +45,17 @@ ROTATIONS = [_rot_z(d) for d in range(0, 360, 5)] + _random_rotations(50)
 
 
 def test_canonical_frame_is_right_handed(cloud):
-    for R in ROTATIONS[:10]:
+    for R in ROTATIONS:
         C = cloud @ R.T
         X = C - C.mean(0)
-        _, _, Vt = np.linalg.svd(X - X.mean(0), full_matrices=False)
-        Z, _ = _canonicalise(C)
-        basis = np.linalg.lstsq(X, Z * np.sqrt((X ** 2).sum(1).mean()), rcond=None)[0]
+        Z, rms = _canonicalise(C)
+        basis = np.linalg.lstsq(X, Z * rms, rcond=None)[0]   # X @ basis = Z * rms
         assert np.linalg.det(basis) > 0
+
+
+def test_fewer_than_three_points_does_not_raise_in_canonicalise():
+    for n in (1, 2):
+        _canonicalise(np.random.default_rng(0).normal(size=(n, 3)))
 
 
 def test_proper_rotations_score_as_identical(cloud):

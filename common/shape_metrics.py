@@ -29,8 +29,9 @@ A **mirrored** embryo scores `d2_distance` 0.002197 -- bit-identical to the spli
 by construction for Gromov-Wasserstein, 3D Zernike moments and the Laplace-Beltrami spectrum, all of which are
 reflection-invariant; Chamfer distance and F-score at a distance threshold actually rank the mirror ABOVE every
 genuine baseline. `sliced_wasserstein` and `occupancy_dice` minimise over proper rotations only (det = +1), so
-they are not reflection-invariant by construction -- but their sensitivity to handedness has not been
-calibrated here, so do not read them as laterality tests either.
+they are not reflection-invariant by construction. `_canonicalise` forces a right-handed frame, so a proper
+rotation of a cloud is scored as identical and a mirror image is not (tests/test_shape_rotation_invariance.py).
+That is a check on the frame, not a calibrated laterality test, so do not read them as one.
 
 Since dextral looping is the flagship phenotype of these conditional knockouts, that is a real gap. The
 honest place for it is a calibrated topological diagnostic (persistent homology with a density-aware
@@ -57,7 +58,7 @@ def _canonicalise(C):
     rms = float(np.sqrt((X ** 2).sum(1).mean()))
     if rms < 1e-12: return X, rms
     _, _, Vt = np.linalg.svd(X - X.mean(0), full_matrices=False)
-    if np.linalg.det(Vt) < 0:
+    if Vt.shape[0] == 3 and np.linalg.det(Vt) < 0:   # fewer than 3 points gives a non-square Vt
         Vt[-1] *= -1   # keep the frame right-handed, see issue #7
     return (X @ Vt.T) / rms, rms
 
